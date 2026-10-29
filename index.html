@@ -55,6 +55,24 @@ body{background:#eaf0f6}
 .chip{background:#e7f8fd;color:#076487}
 @media(max-width:900px){.partner-logos img:first-child{height:29px}.partner-logos img:last-child{height:27px}.login-brand-copy{padding-left:0;border-left:0}.login-left{min-height:440px!important}}
 
+
+.sv-back{position:fixed;inset:0;background:rgba(9,35,71,.45);display:flex;align-items:center;justify-content:center;z-index:9999;padding:16px}
+.sv-card{background:#fff;border-radius:18px;max-width:460px;width:100%;padding:24px 22px;box-shadow:0 24px 60px rgba(0,0,0,.25);font-family:Poppins,Arial,sans-serif;color:var(--ink)}
+.sv-card small{color:var(--pink);font-weight:800;letter-spacing:.12em;font-size:11px;text-transform:uppercase}
+.sv-card h3{margin:6px 0 4px;font-size:20px;color:var(--navy)}
+.sv-card p{margin:0 0 14px;color:var(--muted);font-size:13px}
+.sv-faces{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:6px}
+.sv-face{border:2px solid var(--line);background:#fff;border-radius:14px;padding:8px 2px 6px;cursor:pointer;display:grid;justify-items:center;gap:4px;font:600 10.5px/1.2 Poppins,Arial,sans-serif;color:var(--muted);transition:transform .12s,border-color .12s}
+.sv-face svg{width:38px;height:38px}
+.sv-face:hover{transform:translateY(-2px)}
+.sv-face:focus-visible{outline:3px solid var(--pink);outline-offset:2px}
+.sv-face[aria-pressed="true"]{border-color:var(--pink);background:#fff1f4;color:var(--pink2)}
+.sv-card textarea{width:100%;min-height:70px;border:1px solid var(--line);border-radius:12px;padding:10px;font:13px Poppins,Arial,sans-serif;resize:vertical;margin:10px 0 4px}
+.sv-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}
+.sv-actions button{border-radius:10px;padding:10px 16px;font:700 13px Poppins,Arial,sans-serif;cursor:pointer;border:1px solid var(--line);background:#fff;color:var(--ink)}
+.sv-actions .sv-send{background:var(--pink);border-color:var(--pink);color:#fff}
+.sv-actions .sv-send:disabled{opacity:.45;cursor:not-allowed}
+@media (prefers-reduced-motion:reduce){.sv-face{transition:none}}
 [data-dl].dl-locked{opacity:.55;cursor:not-allowed;filter:grayscale(.4)}
 </style><script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.8.0/mammoth.browser.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script></head><body>
 <div id="login" class="login">
@@ -167,8 +185,27 @@ function stopMic(){if(recognition){try{recognition.stop()}catch(e){}try{recognit
 function save(){if(!session||!user.email)return;const k='hackaton_sessions_'+user.email;let a=[];try{a=JSON.parse(localStorage.getItem(k)||'[]')}catch(e){}const i=a.findIndex(x=>x.id===session.id);if(i>=0)a[i]=session;else a.unshift(session);localStorage.setItem(k,JSON.stringify(a.slice(0,30)))}
 function showHistory(){stopSpeech();stopMic();$('home').classList.add('hidden');$('reviewScreen').classList.add('hidden');$('chatScreen').classList.add('hidden');$('history').classList.remove('hidden');const k='hackaton_sessions_'+user.email;let a=[];try{a=JSON.parse(localStorage.getItem(k)||'[]')}catch(e){}$('historyList').innerHTML=a.length?a.map(s=>`<div style="padding:12px 0;border-bottom:1px solid #eee;display:flex;justify-content:space-between;gap:12px;align-items:center"><div><b>${new Date(s.started).toLocaleString('es-PE')}</b><br><span class="status">${Object.values(s.scores||{}).filter(x=>x===2).length}/5 componentes · ${s.completed?'Pitch completo':s.ended?'Sesión finalizada':'En revisión'}</span></div><button type="button" onclick="resumeSession('${s.id}')" style="border:1px solid #e1e4e8;background:white;border-radius:9px;padding:8px 11px;cursor:pointer">Retomar</button></div>`).join(''):'<p>No hay sesiones guardadas todavía.</p>'}
 function resumeSession(id){const k='hackaton_sessions_'+user.email;let a=[];try{a=JSON.parse(localStorage.getItem(k)||'[]')}catch(e){}const found=a.find(x=>x.id===id);if(!found)return;session=found;session.ended=null;$('home').classList.add('hidden');$('history').classList.add('hidden');$('chatScreen').classList.remove('hidden');$('messages').innerHTML='';(session.messages||[]).forEach(m=>add(m.role,m.text));renderProgress();mentor(`${user.first}, retomemos desde donde lo dejamos. Seguimos con ${current().name}.`);save()}
-function finish(){stopSpeech();stopMic();if(!session)return;session.ended=new Date().toISOString();save();metric('fin');add('mentor','Sesión finalizada. Tu avance quedó guardado en el historial y podrás retomarlo cuando lo necesites.')}
-function exitTutor(){finish();home()}
+
+/* ===== Encuesta de satisfacción (caritas) antes de cerrar sesión ===== */
+const SV_OPTS=[[1,'Muy mala','M12 22c2-3 8-3 10 0',['#c7334d','#fde7ea']],[2,'Mala','M13 21c2-1.6 6-1.6 8 0',['#e0703a','#fdeee4']],[3,'Regular','M13 20h8',['#c08a00','#fdf5dc']],[4,'Buena','M13 19c2 1.6 6 1.6 8 0',['#3a9a6a','#e5f5ec']],[5,'Excelente','M12 18c2 4 8 4 10 0',['#14865c','#dff3ea']]];
+function svFace(path,[c,bg]){return `<svg viewBox="0 0 34 34" aria-hidden="true"><circle cx="17" cy="17" r="15" fill="${bg}" stroke="${c}" stroke-width="2"/><circle cx="12" cy="13.5" r="1.8" fill="${c}"/><circle cx="22" cy="13.5" r="1.8" fill="${c}"/><path d="${path}" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round"/></svg>`}
+function askSurvey(next){
+ if(!session||session.survey){next();return}
+ const d=document.createElement('div');d.className='sv-back';d.setAttribute('role','dialog');d.setAttribute('aria-modal','true');d.setAttribute('aria-labelledby','svTitle');
+ d.innerHTML=`<div class="sv-card"><small>Antes de salir</small><h3 id="svTitle">¿Qué te pareció KRIZ-IA?</h3><p>Tu opinión nos ayuda a mejorar el acompañamiento del pitch. Toma 10 segundos.</p>
+ <div class="sv-faces">${SV_OPTS.map(([v,l,path,col])=>`<button type="button" class="sv-face" data-v="${v}" aria-pressed="false" aria-label="${l}">${svFace(path,col)}<span>${l}</span></button>`).join('')}</div>
+ <textarea id="svComment" maxlength="400" placeholder="¿Algo que mejorarías o que te ayudó? (opcional)"></textarea>
+ <div class="sv-actions"><button type="button" class="sv-skip">Omitir</button><button type="button" class="sv-send" disabled>Enviar y salir</button></div></div>`;
+ document.body.appendChild(d);
+ let val=0;const send=d.querySelector('.sv-send');
+ d.querySelectorAll('.sv-face').forEach(b=>b.onclick=()=>{val=+b.dataset.v;d.querySelectorAll('.sv-face').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));send.disabled=false});
+ const close=(answered)=>{if(answered){const opt=SV_OPTS.find(x=>x[0]===val);session.survey={valor:val,etiqueta:opt[1],comentario:d.querySelector('#svComment').value.trim(),fecha:new Date().toISOString()};metric('encuesta',{satisfaccion:val,satisfaccion_texto:opt[1],comentario:session.survey.comentario,componentes:Object.values(session.scores||{}).filter(x=>x===2).length})}else{session.survey={omitida:true,fecha:new Date().toISOString()}}save();d.remove();next()};
+ send.onclick=()=>close(true);d.querySelector('.sv-skip').onclick=()=>close(false);
+ d.addEventListener('keydown',e=>{if(e.key==='Escape')close(false)});
+ setTimeout(()=>d.querySelector('.sv-face').focus(),30);
+}
+function finish(force){if(!force&&session&&!session.survey){askSurvey(()=>finish(true));return}stopSpeech();stopMic();if(!session)return;session.ended=new Date().toISOString();save();metric('fin');add('mentor','Sesión finalizada. Tu avance quedó guardado en el historial y podrás retomarlo cuando lo necesites.')}
+function exitTutor(){if(session&&!session.survey){askSurvey(()=>{finish(true);home()});return}finish(true);home()}
 function docEscape(s){return String(s||'').replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]))}
 function pitchReady(s){return !!s&&BLOCKS.every(b=>(s.scores||{})[b.id]===2)}
 function notifyLocked(msg){if(session&&!$('chatScreen').classList.contains('hidden'))add('mentor',msg);else alert(msg)}
@@ -177,5 +214,5 @@ function updateDownloadLock(){const ready=pitchReady(session);document.querySele
 function downloadPitch(){if(!session)return alert('Todavía no hay contenido de pitch para descargar.');if(!pitchReady(session))return notifyLocked(lockedMsg(session));const v=buildPolishedPitch();if(!v.text.trim()&&session.sourcePitch)v.text=session.sourcePitch;if(!v.text.trim())return alert('Todavía no hay contenido de pitch para descargar.');const tm=estimatePitch(v.text),rows=v.sections.map((s,i)=>`<tr><td style="padding:8px;border:1px solid #ddd"><b>${i+1}. ${docEscape(s.title)}</b></td><td style="padding:8px;border:1px solid #ddd">${docEscape(s.text)}</td></tr>`).join('');const html=`<html><head><meta charset="utf-8"><style>body{font-family:Arial,sans-serif;color:#172033;line-height:1.55}h1{color:#ef174c}table{width:100%;border-collapse:collapse;margin:18px 0}th{background:#ef174c;color:#fff;padding:9px;text-align:left}.box{background:#f5f7fa;padding:12px;border-left:4px solid #ef174c}</style></head><body><h1>KRIZ-IA · Pitch Hackatón Docente</h1><p><b>Participante:</b> ${docEscape((user.first||'')+' '+(user.last||''))}</p><div class="box"><b>Duración estimada:</b> ${tm.label} · ${tm.words} palabras<br><b>Validación:</b> ${tm.seconds<=240?'Dentro del máximo de 4 minutos':`Se ha pasado por ${fmt(tm.seconds-240)}; requiere síntesis`}</div><h2>Pitch ordenado por estructura</h2><table><tr><th>Componente</th><th>Contenido</th></tr>${rows}</table><h2>Versión corrida para ensayo</h2><p style="white-space:pre-wrap">${docEscape(v.text)}</p></body></html>`;const blob=new Blob(['\ufeff',html],{type:'application/msword'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='Pitch_Hackaton_Docente_KRIZIA_'+(user.first||'Participante')+'.doc';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
 function latestStoredSession(){if(!user?.email)return null;const k='hackaton_sessions_'+user.email;try{return(JSON.parse(localStorage.getItem(k)||'[]')||[])[0]||null}catch(e){return null}}
 function downloadAnyPitch(){if(session){downloadPitch();return}const raw=$('reviewText')?.value?.trim()||reviewSourceText||'';if(raw){const a=analyzePitchText(raw);if(a.complete<BLOCKS.length)return alert(`Tu pitch aún tiene ${BLOCKS.length-a.complete} componente(s) por completar. Usa «Trabajar solo lo pendiente con KRIZ-IA» y, al terminar las 5 partes, podrás descargarlo.`);const temp=makeSession('review');temp.sourcePitch=raw;a.results.forEach(r=>{temp.notes[r.block.id]=r.text||'';temp.scores[r.block.id]=r.state==='ok'?2:r.state==='partial'?1:0});const prev=session;session=temp;downloadPitch();session=prev;return}const last=latestStoredSession();if(last&&!pitchReady(last))return alert(lockedMsg(last));if(last){const prev=session;session=last;downloadPitch();session=prev;return}alert('Todavía no hay contenido de pitch para descargar.')}
-function metric(evento){if(!SCRIPT_URL||!user?.email)return;try{fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify({evento,nombre:user.first,apellido:user.last,correo:user.email,fecha:new Date().toISOString()})})}catch(e){}}
+function metric(evento,extra){if(!SCRIPT_URL||!user?.email)return;try{fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify({evento,nombre:user.first,apellido:user.last,correo:user.email,fecha:new Date().toISOString(),...(extra||{})})})}catch(e){}}
 init();</script></body></html>
